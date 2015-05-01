@@ -54,6 +54,11 @@ class AniListClient:
 
     """
         MAGIC!
+        
+        __getattr__ is called magically when you try to access an attribute not
+        explicitly managed by the class. For example, client.anime_search
+        will call __getattr__(instance, 'anime_search'), allowing us to build
+        an api_call method from the configured schema.
     """
     def __getattr__(self, item):
         parts = item.split('_')
