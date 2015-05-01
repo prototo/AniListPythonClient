@@ -1,0 +1,11 @@
+auth:
+    accessToken:
+        method: POST
+        path:   auth/access_token
+        body:   ['grant_type', 'client_id', 'client_secret']
+
+anime:
+    search:
+        method:     GET
+        path:       anime/search
+        url_params: [query]
