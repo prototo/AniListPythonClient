@@ -1,3 +1,6 @@
+# don't commit your client id and secret to git!
+config.yml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

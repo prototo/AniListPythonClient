@@ -2,89 +2,72 @@ import yaml
 import json
 import requests
 from time import time
+from schema import Schema
 
 class AniListClient:
-
-    base_path = 'https://anilist.co/api'
-    schema = {}
+    config = {}
+    schema = None
     session = None
     auth_expires = 0
 
-    client_id = ''
-    client_secret = ''
-
     def __init__(self):
-        schema = None
-        with open('schema.yml') as f:
-            schema = f.read()
-        self.schema = yaml.load(schema)
-
+        self.schema = Schema()
         self.session = requests.Session()
+
+        self.load_config()
         self.update_auth()
 
+    def load_config(self, config_file='config.yml'):
+        with open(config_file) as f:
+            self.config = yaml.load(f.read())
+
     def update_auth(self):
-        res = self.auth_accessToken({
-            'grant_type':       'client_credentials',
-            'client_id':        self.client_id,
-            'client_secret':    self.client_secret
+        status, body = self.auth_accessToken({
+            'grant_type': 'client_credentials',
+            'client_id': self.config['client_id'],
+            'client_secret': self.config['client_secret']
         })
 
         try:
-            body = json.loads(res.text)
             self.session.headers.update({
-                'access_token': body.get('access_token', '')
+                'Authorization': ' '.join(('Bearer', body.get('access_token', '')))
             })
             self.auth_expires = int(body.get('expires', 0))
-        except:
+        except Exception as e:
             # actually do something here
-            print('something bad happened')
-            pass
-
-    def form_url(self, signature, data):
-        method = signature.get('method', 'get').lower()
-        path = signature.get('path', '')
-
-        for param in signature.get('url_params', []):
-            path = '/'.join((path, data.get(param, '')))
-
-        if method == 'get':
-            pass
-
-        return '/'.join((self.base_path, path))
+            print(e)
 
     """
-        MAGIC!
-        
+        Proxies to self.send_request
+
         __getattr__ is called magically when you try to access an attribute not
         explicitly managed by the class. For example, client.anime_search
         will call __getattr__(instance, 'anime_search'), allowing us to build
         an api_call method from the configured schema.
     """
     def __getattr__(self, item):
-        parts = item.split('_')
-        signature = self.schema
+        return self.send_request(item)
 
-        for part in parts:
-            if not signature:
-                return None
-            if part in signature:
-                signature = signature.get(part, None)
+    def send_request(self, signature):
+        schema = self.schema.get_schema(signature)
+
+        path = schema.get('path', None)
+        method = schema.get('method', 'get').lower()
+        params = schema.get('params', [])
 
         def api_call(data={}):
             if self.auth_expires <= int(time()):
                 # self.update_auth()
                 pass
 
-            method = signature.get('method', 'get').lower()
             request = self.session.__getattribute__(method)
             if not request:
                 # throw bad method in schema
                 return False
 
-            url = self.form_url(signature, data)
-            body = {key: data.get(key, False) for key in signature.get('body', [])}
-
-            res = request(url, data=body)
-            return res
+            # filter out unnecessary pairs in the data dict
+            body = {key: data.get(key, False) for key in params}
+            res = request(path.format(**data), data=body)
+            return res.status_code, json.loads(res.text)
 
         return api_call

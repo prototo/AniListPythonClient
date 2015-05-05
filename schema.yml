@@ -1,11 +1,33 @@
-auth:
-    accessToken:
-        method: POST
-        path:   auth/access_token
-        body:   ['grant_type', 'client_id', 'client_secret']
+basepath:   'https://anilist.co/api'
+routes:
+    auth:
+        path:   auth
+        routes:
+            accesstoken:
+                method: POST
+                path:   access_token
+                params: ['grant_type', 'client_id', 'client_secret']
 
-anime:
-    search:
-        method:     GET
-        path:       anime/search
-        url_params: [query]
+    anime:
+        path:   anime
+        routes:
+            get:
+                path:   '{id}'
+            page:
+                path:   '{id}/page'
+            characters:
+                path:   '{id}/characters'
+            staff:
+                path:   '{id}/staff'
+            actors:
+                path:   '{id}/actors'
+            airing:
+                path:   '{id}/airing'
+            search:
+                path:   'search/{query}'
+
+    browse:
+        path:   browse/anime
+
+    genrelist:
+        path:   genre_list
