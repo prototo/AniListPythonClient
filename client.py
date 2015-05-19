@@ -68,6 +68,9 @@ class AniListClient:
             # filter out unnecessary pairs in the data dict
             body = {key: data.get(key, False) for key in params}
             res = request(path.format(**data), data=body)
-            return res.status_code, json.loads(res.text)
+            try:
+                return res.status_code, json.loads(res.text)
+            except Exception as e:
+                return res.status_code, res.text
 
         return api_call
